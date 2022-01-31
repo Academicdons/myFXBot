@@ -157,12 +157,10 @@ def check_order_state():
     order_id = order_id
 
     orders = mt.positions_total()
-    print('we have ', orders, 'running')
     no_of_orders = no_of_orders
     try:
         if orders == 1:
             print('order', no_of_orders, "is still running, Please hold on")
-            time.sleep(5)
             checking_manual_loop()
             
         else:
@@ -223,10 +221,14 @@ def place_an_order():
     lotage = lotage
 
     trade_type = trade_type
+    print("Our market is :", market)
 
-    point = mt5.symbol_info(market).point
-    price = mt5.symbol_info_tick(market).ask
-    print("price ")
+    point = mt.symbol_info(market).point
+    try:
+        price = mt.symbol_info_tick(market).ask
+    except:
+        pass
+    print(price)
 
     if trade_type == 0:
         print('its a buy order')
@@ -237,11 +239,13 @@ def place_an_order():
         sl = price + STOPLOSS * point
         tp = price - TAKEPROFIT * point
     print('Your sl and tp are :', sl, 'and', tp)
+    sl = float(sl)
+    
 
     deviation = 20
     position = position
 
-    operation = {
+    request = {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": market,
         "volume": lotage,
@@ -257,16 +261,25 @@ def place_an_order():
     }
 
     # Sending the buy
-    result = mt5.order_send(operation)
+    result = mt5.order_send(request)
     global order_id
     order_id = result[2]
     position += 1
-    #    print(
-    #        "[Thread - orders] 1. order_send(): by {} {} lots at {} with deviation={} points".format(market, lotage, price,
-    #                                                                                                     deviation))
     if result.retcode != mt5.TRADE_RETCODE_DONE:
-        print("[Thread - orders] Failed operation: retcode={}".format(result.retcode))
-        return None
+        print("4. order_send failed, retcode={}".format(result.retcode))
+        print("   result",result)
+    else:
+        print("4. position #{} closed, {}".format(position,result))
+    # request the result as a dictionary and display it element by element
+        result_dict=result._asdict()
+        for field in result_dict.keys():
+            print("   {}={}".format(field,result_dict[field]))
+        # if this is a trading request structure, display it element by element as well
+            if field=="request":
+                traderequest_dict=result_dict[field]._asdict()
+                for tradereq_filed in traderequest_dict:
+                    print("       traderequest: {}={}".format(tradereq_filed,traderequest_dict[tradereq_filed]))
+ 
 
     check_order_state()
 
